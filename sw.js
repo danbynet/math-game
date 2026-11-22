@@ -1,6 +1,6 @@
 // Offline support: cache the whole game on first visit, then serve it from the cache.
 // Bump VERSION whenever index.html changes so devices pick up the new version.
-const VERSION = 'math-game-v2.2';
+const VERSION = 'math-game-v3.0';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-512-maskable.png'];
 
 self.addEventListener('install', e => {
