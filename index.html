@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#8b5cf6">
+<meta name="color-scheme" content="light">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>המשחק של תאיר</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root {
+    --bg1: #fdf2f8; --bg2: #ede9fe;
+    --ink: #2e1065; --ink2: #5b21b6; --muted: #6b7280;
+    --primary: #8b5cf6; --primary-d: #6d28d9; --pink: #ec4899; --pink-d: #db2777;
+    --soft: #f5f3ff; --line: #ddd6fe; --card: #ffffff;
+    --ok: #10b981; --ok-bg: #d1fae5; --bad: #f43f5e; --bad-bg: #ffe4e6;
+    --gold: #f59e0b; --gold-bg: #fef3c7;
+    --r: 20px; --shadow: 0 8px 24px rgba(109, 40, 217, .12);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; }
+  body {
+    font-family: system-ui, "Segoe UI", "Noto Sans Hebrew", Arial, sans-serif;
+    background: linear-gradient(160deg, var(--bg1) 0%, var(--bg2) 100%) fixed;
+    color: var(--ink); min-height: 100vh; min-height: 100dvh;
+    padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    user-select: none; -webkit-user-select: none; overscroll-behavior: none;
+  }
+  button { font-family: inherit; touch-action: manipulation; cursor: pointer; color: inherit; }
+  .app { max-width: 860px; margin: 0 auto; }
+  .ltr { direction: ltr; unicode-bidi: isolate; display: inline-block; }
+
+  /* ---------- top chips ---------- */
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .brand { font-weight: 900; font-size: 22px; color: var(--primary-d); }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { background: var(--card); border: 2px solid var(--line); border-radius: 999px; padding: 6px 12px; font-weight: 800; font-size: 16px; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,.04); }
+  .chip.bump { animation: bump .45s ease; }
+  @keyframes bump { 40% { transform: scale(1.25); } }
+
+  /* ---------- home ---------- */
+  .hero { background: var(--card); border-radius: 28px; padding: 20px; box-shadow: var(--shadow); display: flex; gap: 16px; align-items: center; border: 3px solid var(--line); }
+  .mascot { font-size: 72px; line-height: 1; animation: float 3s ease-in-out infinite; flex-shrink: 0; }
+  @keyframes float { 50% { transform: translateY(-8px) rotate(-4deg); } }
+  .hero-text { flex: 1; min-width: 0; }
+  .bubble { font-size: 20px; font-weight: 800; color: var(--ink2); margin-bottom: 10px; }
+  .lvl-row { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); font-weight: 700; margin-bottom: 6px; gap: 8px; }
+  .bar { height: 14px; background: var(--soft); border-radius: 999px; overflow: hidden; border: 2px solid var(--line); }
+  .bar > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--pink), var(--primary)); border-radius: 999px; transition: width .6s ease; }
+
+  .section-title { font-size: 18px; font-weight: 900; color: var(--primary-d); margin: 22px 4px 10px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr)); gap: 12px; }
+  .tile { background: var(--card); border: 3px solid var(--line); border-radius: var(--r); padding: 16px 14px; text-align: right; display: flex; gap: 12px; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,.04); transition: transform .15s, border-color .15s; }
+  .tile:active { transform: scale(.97); }
+  @media (hover: hover) { .tile:hover { border-color: var(--primary); transform: translateY(-3px); } }
+  .tile .te { font-size: 38px; flex-shrink: 0; }
+  .tile b { display: block; font-size: 18px; color: var(--ink); }
+  .tile small { display: block; font-size: 14px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+  .tile .best { color: var(--gold); font-weight: 800; }
+  .tile.featured { background: linear-gradient(135deg, #fdf4ff, #ede9fe); border-color: #c4b5fd; }
+
+  .foot { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+  .soft-btn { flex: 1; min-width: 140px; background: var(--card); border: 3px solid var(--line); border-radius: 16px; padding: 14px; font-size: 17px; font-weight: 800; color: var(--ink2); }
+  .soft-btn:active { transform: scale(.97); }
+  .icon-btn { width: 48px; height: 48px; flex: 0 0 48px; border-radius: 50%; border: 3px solid var(--line); background: var(--card); font-size: 22px; display: inline-flex; align-items: center; justify-content: center; }
+  .icon-btn:active { transform: scale(.92); }
+
+  /* ---------- game ---------- */
+  .gbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .gtitle { flex: 1; font-weight: 900; font-size: 20px; color: var(--primary-d); text-align: center; }
+  .prog { margin-bottom: 16px; }
+  .timer-num { text-align: center; font-size: 22px; font-weight: 900; color: var(--pink-d); margin: -6px 0 8px; }
+  .timer-num.hurry { color: var(--bad); animation: bump .5s ease infinite; }
+
+  .qcard { position: relative; background: var(--card); border-radius: 28px; padding: 26px 18px; box-shadow: var(--shadow); border: 4px solid var(--line); text-align: center; margin-bottom: 18px; }
+  .qcard.pop { animation: pop .35s ease; }
+  @keyframes pop { from { transform: scale(.92); opacity: 0; } }
+  .qcard.shake { animation: shake .4s ease; }
+  @keyframes shake { 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
+  .qcard.good { border-color: var(--ok); }
+  .speak { position: absolute; top: 10px; left: 10px; width: 44px; height: 44px; border-radius: 50%; border: none; background: var(--soft); font-size: 20px; }
+  .qnum { font-size: 14px; color: var(--muted); font-weight: 800; margin-bottom: 6px; }
+  .expr { font-size: clamp(38px, 11vw, 64px); font-weight: 900; color: var(--ink); direction: ltr; display: flex; align-items: center; justify-content: center; gap: .25em; flex-wrap: wrap; line-height: 1.2; }
+  .slot { min-width: 1.8em; padding: 0 .2em; height: 1.35em; border: 4px dashed #a78bfa; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; color: var(--primary); background: var(--soft); }
+  .slot.typed { border-style: solid; color: var(--ink); background: #fff; }
+  .slot.ok { border: 4px solid var(--ok); background: var(--ok-bg); color: #065f46; }
+  .slot.bad { border: 4px solid var(--bad); background: var(--bad-bg); color: #9f1239; }
+  .story { font-size: clamp(20px, 5vw, 26px); font-weight: 700; line-height: 1.6; color: var(--ink); text-align: right; padding: 0 8px 0 46px; }
+  .story-ans { margin-top: 14px; font-size: 22px; font-weight: 800; color: var(--ink2); display: flex; align-items: center; justify-content: center; gap: 12px; }
+  .story-ans .slot { font-size: 38px; }
+
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 520px; margin: 0 auto; }
+  .opt { background: var(--card); border: 4px solid var(--line); border-radius: 20px; padding: 18px 8px; font-size: clamp(28px, 8vw, 38px); font-weight: 900; color: var(--ink2); direction: ltr; box-shadow: 0 4px 0 var(--line); transition: transform .1s; }
+  .opt:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line); }
+  .opt.ok { background: var(--ok-bg); border-color: var(--ok); color: #065f46; box-shadow: 0 4px 0 var(--ok); }
+  .opt.bad { background: var(--bad-bg); border-color: var(--bad); color: #9f1239; box-shadow: 0 4px 0 var(--bad); }
+  .opt:disabled { cursor: default; }
+  .tf { grid-template-columns: 1fr 1fr; }
+  .tf .opt { direction: rtl; font-size: 26px; }
+  .tf .yes { color: #047857; }
+  .tf .no { color: #be123c; }
+
+  .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 340px; margin: 0 auto; direction: ltr; }
+  .key { height: 64px; border-radius: 18px; border: 3px solid var(--line); background: var(--card); font-size: 30px; font-weight: 900; color: var(--ink2); box-shadow: 0 4px 0 var(--line); }
+  .key:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--line); }
+  .key.ok { background: var(--ok); border-color: var(--ok); color: #fff; box-shadow: 0 4px 0 #047857; }
+  .key.del { background: var(--bad-bg); border-color: #fecdd3; color: var(--bad); box-shadow: 0 4px 0 #fecdd3; }
+
+  .msg { min-height: 56px; margin-top: 14px; text-align: center; font-size: 21px; font-weight: 800; padding: 10px; border-radius: 16px; }
+  .msg.ok { color: #047857; background: var(--ok-bg); }
+  .msg.bad { color: #9f1239; background: var(--bad-bg); }
+  .msg.hint { color: #92400e; background: var(--gold-bg); }
+  .dots { display: inline-grid; gap: 5px; margin: 10px auto 0; direction: ltr; }
+  .dots i { width: 14px; height: 14px; border-radius: 50%; background: var(--pink); display: block; }
+
+  /* match */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  @media (min-width: 600px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+  .mcard { min-height: 78px; background: var(--card); border: 4px solid var(--line); border-radius: 18px; font-size: clamp(20px, 5.5vw, 28px); font-weight: 900; color: var(--ink2); direction: ltr; box-shadow: 0 4px 0 var(--line); transition: transform .15s, opacity .35s, background .15s; padding: 6px; }
+  .mcard.ans { color: var(--pink-d); }
+  .mcard.sel { background: var(--primary); color: #fff; border-color: var(--primary-d); transform: scale(1.05); }
+  .mcard.bad { background: var(--bad-bg); border-color: var(--bad); color: #9f1239; animation: shake .4s ease; }
+  .mcard.done { background: var(--ok-bg); border-color: var(--ok); color: #065f46; opacity: 0; transform: scale(.6); pointer-events: none; }
+
+  /* ---------- results ---------- */
+  .result { background: var(--card); border-radius: 28px; padding: 28px 20px; box-shadow: var(--shadow); text-align: center; border: 4px solid var(--line); }
+  .result h2 { margin: 0 0 6px; font-size: 30px; color: var(--primary-d); }
+  .result .sub { font-size: 19px; font-weight: 700; color: var(--ink2); }
+  .big-stars { font-size: 54px; margin: 14px 0 4px; letter-spacing: 6px; }
+  .big-stars span { display: inline-block; animation: starIn .5s ease backwards; }
+  .big-stars span.off { filter: grayscale(1); opacity: .25; }
+  @keyframes starIn { from { transform: scale(0) rotate(-90deg); } }
+  .earned { font-size: 22px; font-weight: 900; color: var(--gold); margin: 8px 0; }
+  .reward { margin: 16px auto 0; padding: 14px; border-radius: 18px; background: var(--gold-bg); font-weight: 800; font-size: 19px; color: #92400e; max-width: 420px; }
+  .reward .stk { font-size: 54px; display: inline-block; animation: starIn .7s ease backwards; }
+  .actions { display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+  .main-btn { background: var(--pink); color: #fff; border: none; border-radius: 999px; padding: 16px 30px; font-size: 20px; font-weight: 900; box-shadow: 0 6px 0 var(--pink-d); }
+  .main-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--pink-d); }
+  .main-btn.alt { background: var(--primary); box-shadow: 0 6px 0 var(--primary-d); }
+
+  /* ---------- album ---------- */
+  .album { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 10px; }
+  .stk-slot { aspect-ratio: 1; background: var(--card); border: 3px solid var(--line); border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 42px; }
+  .stk-slot.locked { background: var(--soft); font-size: 24px; opacity: .6; border-style: dashed; }
+  .panel { background: var(--card); border-radius: 22px; padding: 18px; box-shadow: var(--shadow); border: 3px solid var(--line); margin-bottom: 14px; }
+  .panel h3 { margin: 0 0 12px; color: var(--primary-d); font-size: 19px; }
+  .muted { color: var(--muted); font-weight: 600; }
+
+  /* ---------- parents ---------- */
+  .stats4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  .stat { background: var(--soft); border-radius: 16px; padding: 12px; text-align: center; }
+  .stat b { display: block; font-size: 26px; color: var(--ink); }
+  .stat span { font-size: 14px; color: var(--muted); font-weight: 700; }
+  .oprow { display: grid; grid-template-columns: 80px 1fr 90px; gap: 10px; align-items: center; margin-bottom: 10px; font-weight: 700; }
+  .oprow .bar > i { transition: none; }
+  .oprow .bar.lo > i { background: var(--bad); } .oprow .bar.mid > i { background: var(--gold); } .oprow .bar.hi > i { background: var(--ok); }
+  .heat { width: 100%; border-collapse: separate; border-spacing: 4px; direction: ltr; table-layout: fixed; }
+  .heat-wrap { overflow-x: auto; }
+  @media (max-width: 520px) { .heat { border-spacing: 2px; } .heat td { font-size: 11px !important; padding: 7px 0 !important; } .heat th { font-size: 12px !important; } }
+  .heat th { font-size: 14px; color: var(--muted); font-weight: 800; }
+  .heat td { text-align: center; border-radius: 10px; padding: 8px 0; font-weight: 800; font-size: 14px; background: #f3f4f6; color: #9ca3af; }
+  .heat td.lo { background: #fecdd3; color: #9f1239; } .heat td.mid { background: #fde68a; color: #92400e; } .heat td.hi { background: #a7f3d0; color: #065f46; }
+  .week { display: flex; align-items: flex-end; gap: 8px; height: 120px; direction: ltr; }
+  .week div { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; font-size: 12px; font-weight: 700; color: var(--muted); }
+  .week i { width: 100%; max-width: 34px; background: linear-gradient(var(--primary), var(--pink)); border-radius: 8px 8px 4px 4px; margin-bottom: 4px; min-height: 3px; }
+  .focus li { margin-bottom: 6px; font-weight: 700; }
+  .set-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--soft); font-weight: 700; flex-wrap: wrap; }
+  .set-row:last-child { border-bottom: none; }
+  .set-row input[type=text], .set-row select, .gate input { font: inherit; font-size: 17px; padding: 8px 12px; border-radius: 12px; border: 2px solid var(--line); background: #fff; color: var(--ink); }
+  .set-row input[type=checkbox] { width: 26px; height: 26px; accent-color: var(--primary); }
+  .checks { display: flex; gap: 14px; flex-wrap: wrap; }
+  .checks label { display: flex; align-items: center; gap: 6px; }
+  .danger { background: var(--bad-bg); color: #9f1239; border: 2px solid #fecdd3; border-radius: 12px; padding: 10px 16px; font-weight: 800; font-size: 16px; }
+  .gate { text-align: center; }
+  .gate .expr { font-size: 44px; margin: 10px 0 14px; }
+  .gate input { width: 140px; text-align: center; font-size: 28px; direction: ltr; }
+
+  /* ---------- fx ---------- */
+  #fx { position: fixed; inset: 0; pointer-events: none; z-index: 50; width: 100%; height: 100%; }
+  .spark { position: fixed; pointer-events: none; font-size: 24px; z-index: 40; transform: translate(-50%, -50%); animation: spark .9s ease-out forwards; }
+  @keyframes spark { to { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.4); opacity: 0; } }
+  #toast { position: fixed; top: 16px; left: 50%; transform: translate(-50%, calc(-100% - 40px)); visibility: hidden; background: var(--ink); color: #fff; padding: 12px 22px; border-radius: 999px; font-weight: 800; font-size: 18px; z-index: 60; transition: transform .35s ease; box-shadow: 0 8px 24px rgba(0,0,0,.25); white-space: nowrap; }
+  #toast.on { transform: translate(-50%, 0); visibility: visible; }
+
+  @media (max-width: 420px) {
+    .hero { padding: 14px; gap: 10px; } .mascot { font-size: 56px; } .bubble { font-size: 18px; }
+    .key { height: 58px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ========== HOME ========== -->
+  <section class="screen" id="scr-home">
+    <div class="topbar">
+      <div class="brand" id="brand">👑 המשחק של תאיר</div>
+      <div class="chips">
+        <span class="chip" id="c-stars">⭐ 0</span>
+        <span class="chip" id="c-streak">🔥 0</span>
+      </div>
+    </div>
+    <div class="hero">
+      <div class="mascot" id="mascot" aria-hidden="true">🦄</div>
+      <div class="hero-text">
+        <div class="bubble" id="bubble">היי!</div>
+        <div class="lvl-row"><span id="lvl-name">רמה 1</span><span id="lvl-next"></span></div>
+        <div class="bar"><i id="lvl-bar"></i></div>
+      </div>
+    </div>
+    <div class="section-title">בחרי משחק</div>
+    <div class="tiles" id="tiles"></div>
+    <div class="foot">
+      <button class="soft-btn" id="go-album">📒 אלבום המדבקות</button>
+      <button class="soft-btn" id="go-parent">👪 אזור הורים</button>
+      <button class="icon-btn" id="tog-sound" aria-label="צלילים">🔊</button>
+    </div>
+  </section>
+
+  <!-- ========== GAME ========== -->
+  <section class="screen" id="scr-game" hidden>
+    <div class="gbar">
+      <button class="icon-btn" id="g-back" aria-label="חזרה">✕</button>
+      <div class="gtitle" id="g-title"></div>
+      <span class="chip" id="g-stars">⭐ 0</span>
+    </div>
+    <div class="prog"><div class="bar"><i id="g-prog"></i></div></div>
+    <div class="timer-num" id="g-timer" hidden></div>
+    <div id="g-body"></div>
+    <div class="msg" id="g-msg"></div>
+  </section>
+
+  <!-- ========== RESULTS ========== -->
+  <section class="screen" id="scr-result" hidden>
+    <div class="result" id="result"></div>
+  </section>
+
+  <!-- ========== ALBUM ========== -->
+  <section class="screen" id="scr-album" hidden>
+    <div class="gbar">
+      <button class="icon-btn" data-home aria-label="חזרה">→</button>
+      <div class="gtitle">📒 אלבום המדבקות</div>
+      <span class="chip" id="a-count"></span>
+    </div>
+    <div class="panel"><div class="muted" id="a-next" style="text-align:center;font-size:18px"></div></div>
+    <div class="album" id="album"></div>
+  </section>
+
+  <!-- ========== PARENTS ========== -->
+  <section class="screen" id="scr-parent" hidden>
+    <div class="gbar">
+      <button class="icon-btn" data-home aria-label="חזרה">→</button>
+      <div class="gtitle">👪 אזור הורים</div>
+      <span style="width:48px"></span>
+    </div>
+    <div class="panel gate" id="gate">
+      <h3>כניסה להורים בלבד</h3>
+      <div class="muted">פתרו את התרגיל כדי להיכנס</div>
+      <div class="expr" id="gate-q"></div>
+      <input id="gate-in" type="text" inputmode="numeric" autocomplete="off" aria-label="תשובה">
+      <div class="actions"><button class="main-btn alt" id="gate-go">כניסה</button></div>
+      <div class="msg" id="gate-msg"></div>
+    </div>
+    <div id="parent-body" hidden></div>
+  </section>
+</div>
+
+<canvas id="fx" hidden></canvas>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+/* ==================================================
+   Storage
+   ================================================== */
+const KEY = 'tair-math-v2';
+const DEF = () => ({
+  name: 'תאיר', stars: 0, stickers: 0, streak: { last: '', count: 0 },
+  stats: {}, days: {}, best: {},
+  settings: { add: true, sub: true, mul: true, div: true, range: 100, perRound: 10, voice: true, sound: true }
+});
+let P = load();
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const d = JSON.parse(raw), def = DEF();
+      return Object.assign(def, d, {
+        settings: Object.assign(def.settings, d.settings || {}),
+        streak: Object.assign(def.streak, d.streak || {})
+      });
+    }
+  } catch (e) {}
+  return DEF();
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(P)); } catch (e) {} }
+
+/* ==================================================
+   Utils
+   ================================================== */
+const $ = s => document.querySelector(s);
+const rnd = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+const dstr = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const today = () => dstr(new Date());
+const yesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dstr(d); };
+const reduced = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+function wpick(items, weights) {
+  const tot = weights.reduce((a, b) => a + b, 0); let r = Math.random() * tot;
+  for (let i = 0; i < items.length; i++) { r -= weights[i]; if (r <= 0) return items[i]; }
+  return items[items.length - 1];
+}
+const N = () => esc(P.name || 'תאיר');
+
+/* ==================================================
+   Sound (generated, no files) + voice
+   ================================================== */
+let AC = null;
+function ac() {
+  if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  if (AC && AC.state === 'suspended') AC.resume();
+  return AC;
+}
+function tone(freq, start, dur, type = 'sine', vol = 0.16) {
+  const c = ac(); if (!c) return;
+  const o = c.createOscillator(), g = c.createGain(), t = c.currentTime + start;
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + dur + 0.05);
+}
+const SFX = {
+  ok() { [523, 659, 784].forEach((f, i) => tone(f, i * 0.08, 0.28, 'triangle')); },
+  bad() { tone(247, 0, 0.22, 'sine', 0.12); tone(196, 0.13, 0.32, 'sine', 0.12); },
+  tap() { tone(900, 0, 0.05, 'sine', 0.05); },
+  tick() { tone(1250, 0, 0.05, 'square', 0.03); },
+  win() { [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, i * 0.12, 0.32, 'triangle', 0.15)); },
+  sticker() { [784, 988, 1175, 1568].forEach((f, i) => tone(f, i * 0.07, 0.3, 'sine', 0.13)); }
+};
+function sfx(n) { if (P.settings.sound) { try { SFX[n](); } catch (e) {} } }
+
+/* ---- Hebrew only speech ----
+   Numbers are turned into Hebrew words before speaking, symbols become words,
+   and anything that is not Hebrew is removed. If the device has voices but none
+   of them is Hebrew, the game stays silent rather than read in another language. */
+let heVoice = null, voicesKnown = false;
+function loadVoices() {
+  try {
+    const vs = speechSynthesis.getVoices();
+    voicesKnown = vs.length > 0;
+    heVoice = vs.find(v => /^(he|iw)([-_]|$)/i.test(v.lang)) || null;
+  } catch (e) {}
+}
+if ('speechSynthesis' in window) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+const canSpeakHebrew = () => 'speechSynthesis' in window && (heVoice || !voicesKnown);
+
+const HE_ONES = ['אפס', 'אחת', 'שתיים', 'שלוש', 'ארבע', 'חמש', 'שש', 'שבע', 'שמונה', 'תשע'];
+const HE_TEENS = ['עשר', 'אחת עשרה', 'שתים עשרה', 'שלוש עשרה', 'ארבע עשרה', 'חמש עשרה', 'שש עשרה', 'שבע עשרה', 'שמונה עשרה', 'תשע עשרה'];
+const HE_TENS = ['', '', 'עשרים', 'שלושים', 'ארבעים', 'חמישים', 'שישים', 'שבעים', 'שמונים', 'תשעים'];
+const HE_HUND = ['', 'מאה', 'מאתיים', 'שלוש מאות', 'ארבע מאות', 'חמש מאות', 'שש מאות', 'שבע מאות', 'שמונה מאות', 'תשע מאות'];
+const HE_THOU = ['', 'אלף', 'אלפיים', 'שלושת אלפים', 'ארבעת אלפים', 'חמשת אלפים', 'ששת אלפים', 'שבעת אלפים', 'שמונת אלפים', 'תשעת אלפים'];
+function numToHe(n) {
+  n = Math.floor(n);
+  if (n < 0) return 'מינוס ' + numToHe(-n);
+  if (n === 0) return HE_ONES[0];
+  if (n >= 10000) return String(n).split('').map(d => HE_ONES[+d]).join(' ');
+  const th = Math.floor(n / 1000), hu = Math.floor(n % 1000 / 100), r = n % 100;
+  const parts = [];
+  if (th) parts.push(HE_THOU[th]);
+  if (hu) parts.push(HE_HUND[hu]);
+  let rest = '', compound = false;
+  if (r >= 20 && r % 10) { rest = HE_TENS[Math.floor(r / 10)] + ' ו' + HE_ONES[r % 10]; compound = true; }
+  else if (r >= 20) rest = HE_TENS[r / 10];
+  else if (r >= 10) rest = HE_TEENS[r - 10];
+  else if (r > 0) rest = HE_ONES[r];
+  if (rest) parts.push(rest);
+  if (parts.length > 1 && !compound) parts[parts.length - 1] = 'ו' + parts[parts.length - 1];
+  return parts.join(' ');
+}
+function toHebrewSpeech(t) {
+  return String(t || '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&[a-z#0-9]+;/gi, ' ')
+    .replace(/([א-ת])-(?=\d)/g, '$1')              // ו-15 -> ו15 -> וחמש עשרה
+    .replace(/\d+/g, d => numToHe(+d))
+    .replace(/×/g, ' כפול ').replace(/÷/g, ' חלקי ').replace(/[−-]/g, ' פחות ').replace(/\+/g, ' ועוד ').replace(/=/g, ' שווה ')
+    .replace(/[^֐-׿\s.,?!]/g, ' ')         // keep Hebrew letters and basic punctuation only
+    .replace(/\s+/g, ' ').trim();
+}
+function say(t, force) {
+  if (!(P.settings.voice || force) || !canSpeakHebrew()) {
+    if (force && !canSpeakHebrew()) toast('אין במכשיר קול בעברית');
+    return;
+  }
+  const text = toHebrewSpeech(t);
+  if (!text) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'he-IL'; if (heVoice) u.voice = heVoice; u.rate = 0.9;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+/* ==================================================
+   Rewards
+   ================================================== */
+const STICKERS = ['🐶','🐱','🐰','🦊','🐼','🐨','🦁','🐯','🐸','🐵','🦄','🐙','🦋','🐢','🐬','🦉','🐧','🦒','🐘','🦔','🐹','🐻','🐮','🐷','🐳','🦩','🐝','🐞','🦜','🐲'];
+const STARS_PER_STICKER = 10;
+const LEVELS = ['מתחילה', 'סקרנית', 'חוקרת', 'מתאמנת', 'מומחית', 'אלופה', 'גאונה', 'כוכבת', 'מלכת החשבון'];
+const levelOf = s => Math.floor(Math.sqrt(s / 15)) + 1;
+const starsFor = L => 15 * (L - 1) * (L - 1);
+const levelName = L => LEVELS[Math.min(L, LEVELS.length) - 1] + (L > LEVELS.length ? ' ' + (L - LEVELS.length + 1) : '');
+
+function addStars(k) {
+  const before = levelOf(P.stars);
+  P.stars += k;
+  if (R) R.stars += k;
+  const shouldHave = Math.min(STICKERS.length, Math.floor(P.stars / STARS_PER_STICKER));
+  while (P.stickers < shouldHave) {
+    const s = STICKERS[P.stickers]; P.stickers++;
+    if (R) R.newStickers.push(s);
+    toast('מדבקה חדשה! ' + s); sfx('sticker');
+  }
+  const after = levelOf(P.stars);
+  if (after > before) { if (R) R.levelUp = after; toast('עלית לרמה ' + after + '! 🎉'); }
+  touchStreak(); save(); updateChips();
+}
+function touchStreak() {
+  const t = today();
+  if (P.streak.last === t) return;
+  P.streak.count = P.streak.last === yesterday() ? P.streak.count + 1 : 1;
+  P.streak.last = t;
+}
+const streakNow = () => (P.streak.last === today() || P.streak.last === yesterday()) ? P.streak.count : 0;
+
+function updateChips() {
+  $('#c-stars').textContent = '⭐ ' + P.stars;
+  $('#c-streak').textContent = '🔥 ' + streakNow() + (streakNow() === 1 ? ' יום' : ' ימים');
+  if (R) { const g = $('#g-stars'); g.textContent = '⭐ ' + R.stars; g.classList.remove('bump'); void g.offsetWidth; g.classList.add('bump'); }
+}
+
+let toastT = null;
+function toast(t) {
+  const el = $('#toast'); el.textContent = t; el.classList.add('on');
+  clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('on'), 2200);
+}
+
+/* ==================================================
+   Smart practice: skill selection + problem generation
+   ================================================== */
+const OPS = { add: '+', sub: '−', mul: '×', div: '÷' };
+const WORD = { '+': 'ועוד', '−': 'פחות', '×': 'כפול', '÷': 'חלקי' };
+const opOf = k => k.replace(/\d+/, '');
+const skillsOf = op => (op === 'add' || op === 'sub') ? [op] : range(2, 10).map(t => op + t);
+
+function errRate(k) {
+  const st = P.stats[k]; if (!st || !st.r.length) return null;
+  return st.r.filter(x => !x).length / st.r.length;
+}
+function skillWeight(k) {
+  const st = P.stats[k];
+  if (!st || st.n < 2) return 2.2;           // new skill: show it
+  return 1 + 6 * errRate(k);                 // weak skill: show it a lot more
+}
+function pickSkill() {
+  const s = P.settings;
+  let ops = ['add', 'sub', 'mul', 'div'].filter(o => s[o]);
+  if (!ops.length) ops = ['add'];
+  const opW = ops.map(o => { const ks = skillsOf(o); return ks.reduce((m, k) => m + skillWeight(k), 0) / ks.length; });
+  const op = wpick(ops, opW);
+  const ks = skillsOf(op);
+  return ks.length === 1 ? ks[0] : wpick(ks, ks.map(skillWeight));
+}
+function makeProblem(skill) {
+  const Rg = P.settings.range, op = opOf(skill);
+  let a, b, ans;
+  if (op === 'add') {
+    if (Rg <= 20) { a = rnd(2, Rg - 2); b = rnd(2, Rg - a); }
+    else { a = rnd(Math.round(Rg * .1), Math.round(Rg * .6)); b = rnd(Math.round(Rg * .05), Rg - a); }
+    ans = a + b;
+  } else if (op === 'sub') {
+    a = rnd(Rg <= 20 ? 6 : Math.round(Rg * .3), Rg);
+    b = rnd(Math.max(2, Math.round(a * .1)), a - 2);
+    ans = a - b;
+  } else if (op === 'mul') {
+    const t = +skill.slice(3); let o = rnd(1, 10);
+    if (o === 1 && Math.random() < .7) o = rnd(2, 10);
+    [a, b] = Math.random() < .5 ? [t, o] : [o, t];
+    ans = a * b;
+  } else {
+    const t = +skill.slice(3); let q = rnd(1, 10);
+    if (q === 1 && Math.random() < .7) q = rnd(2, 10);
+    a = t * q; b = t; ans = q;
+  }
+  const sym = OPS[op];
+  return { a, b, ans, op: sym, skill, text: `${a} ${sym} ${b}`, say: `${a} ${WORD[sym]} ${b}` };
+}
+function distractors(p, n = 3) {
+  const A = p.ans, c = new Set();
+  const put = v => { if (Number.isInteger(v) && v >= 0 && v !== A) c.add(v); };
+  [1, -1, 2, -2].forEach(d => put(A + d));
+  if (p.op === '+' || p.op === '−') { put(A + 10); put(A - 10); }
+  if (p.op === '×') { put((p.a + 1) * p.b); put((p.a - 1) * p.b); put(p.a * (p.b + 1)); put(p.a * (p.b - 1)); put(p.a + p.b); }
+  if (p.op === '÷') { put(A + 3); put(p.a - p.b); }
+  if (A >= 12) { const r = +String(A).split('').reverse().join(''); put(r); }
+  const out = shuffle([...c]).slice(0, n);
+  while (out.length < n) { const v = A + rnd(-6, 6); if (v >= 0 && v !== A && !out.includes(v)) out.push(v); }
+  return out;
+}
+function record(skill, ok) {
+  const st = P.stats[skill] || (P.stats[skill] = { n: 0, ok: 0, r: [] });
+  st.n++; if (ok) st.ok++;
+  st.r.push(ok ? 1 : 0); if (st.r.length > 12) st.r.shift();
+  const d = P.days[today()] || (P.days[today()] = { n: 0, ok: 0, ms: 0 });
+  d.n++; if (ok) d.ok++;
+  save();
+}
+function hintFor(p, hidden) {
+  const { a, b, ans, op } = p;
+  if (hidden === 'a' || hidden === 'b') {
+    const known = hidden === 'a' ? b : a;
+    if (op === '+') return `טיפ: ${ans} − ${known} = ?`;
+    if (op === '×') return `טיפ: ${ans} ÷ ${known} = ?`;
+    if (op === '−') return hidden === 'a' ? `טיפ: ${ans} + ${b} = ?` : `טיפ: ${a} − ${ans} = ?`;
+    if (op === '÷') return hidden === 'a' ? `טיפ: ${ans} × ${b} = ?` : `טיפ: ${a} ÷ ${ans} = ?`;
+  }
+  if (op === '×') {
+    if (a <= 10 && b <= 10) return `טיפ: ${a} שורות, בכל שורה ${b}` + dotsHTML(a, b);
+    return '';
+  }
+  if (op === '÷') return `טיפ: ${b} × ? = ${a}`;
+  const bt = b - b % 10, bo = b % 10;
+  if (bt === 0 || bo === 0) return op === '+' ? `טיפ: קודם העשרות, אחר כך האחדות` : `טיפ: אפשר לבדוק בחיבור: ? + ${b} = ${a}`;
+  if (op === '+') return `טיפ: <span class="ltr">${a} + ${bt} = ${a + bt}</span>, ואז עוד ${bo}`;
+  return `טיפ: <span class="ltr">${a} − ${bt} = ${a - bt}</span>, ואז פחות ${bo}`;
+}
+function dotsHTML(rows, cols) {
+  return `<div><div class="dots" style="grid-template-columns:repeat(${cols},14px)">${'<i></i>'.repeat(rows * cols)}</div></div>`;
+}
+
+/* ==================================================
+   Messages
+   ================================================== */
+const okMsgs = () => [`כל הכבוד ${N()}!`, `${N()}, את אלופה!`, 'תשובה מושלמת!', 'וואו, איזה יופי!', 'מצוין!', 'גאונה!', 'בדיוק!', 'יש!'];
+const badMsgs = () => ['כמעט! נסי שוב', 'לא נורא, בואי ננסה שוב', `אל תוותרי ${N()}!`, 'אופס, עוד ניסיון'];
+const greet = () => [`היי ${N()}! מה משחקים היום?`, `${N()}, מוכנה לאתגר?`, 'כל תרגיל מקרב אותך למדבקה חדשה!', `${N()}, בואי נשבור שיא!`];
+
+/* ==================================================
+   Screens
+   ================================================== */
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.hidden = s.id !== id);
+  window.scrollTo(0, 0);
+}
+const MODES = {
+  quiz:    { t: 'מבחן אמריקאי', e: '🎯', d: 'בחרי את התשובה הנכונה' },
+  pad:     { t: 'מחשבון אלופות', e: '🔢', d: 'הקלידי את התשובה' },
+  match:   { t: 'התאמת זוגות',   e: '🃏', d: 'חברי תרגיל לתשובה' },
+  missing: { t: 'המספר החסר',    e: '🧩', d: 'איזה מספר מתחבא?' },
+  tf:      { t: 'נכון או לא?',   e: '⚡', d: 'החליטי מהר' },
+  story:   { t: 'סיפורי חשבון',  e: '📖', d: 'שאלות מילוליות' },
+  race:    { t: 'מרוץ נגד השעון', e: '⏱️', d: '60 שניות, כמה תספיקי?' }
+};
+function renderHome() {
+  $('#brand').textContent = '👑 המשחק של ' + (P.name || 'תאיר');
+  $('#bubble').innerHTML = pick(greet());
+  const L = levelOf(P.stars), lo = starsFor(L), hi = starsFor(L + 1);
+  $('#lvl-name').textContent = `רמה ${L} · ${levelName(L)}`;
+  $('#lvl-next').textContent = `עוד ${hi - P.stars} ⭐ לרמה הבאה`;
+  $('#lvl-bar').style.width = Math.round(100 * (P.stars - lo) / (hi - lo)) + '%';
+  $('#tiles').innerHTML = Object.entries(MODES).map(([k, m]) => {
+    const best = k === 'race' && P.best.race ? `<small class="best">🏆 שיא: ${P.best.race}</small>` : '';
+    return `<button class="tile${k === 'race' ? ' featured' : ''}" data-mode="${k}"><span class="te">${m.e}</span><span><b>${m.t}</b><small>${m.d}</small>${best}</span></button>`;
+  }).join('');
+  $('#tog-sound').textContent = P.settings.sound ? '🔊' : '🔇';
+  updateChips();
+  show('scr-home');
+}
+
+/* ==================================================
+   Round engine
+   ================================================== */
+let R = null;
+// timeouts that die with the round (going home or starting a new round cancels them)
+function later(fn, ms) { const r = R; setTimeout(() => { if (R === r && R) fn(); }, ms); }
+function startMode(mode) {
+  ac();
+  if (R && R.timer) clearInterval(R.timer);
+  R = { mode, idx: 0, total: P.settings.perRound, correct: 0, answered: 0, stars: 0, t0: Date.now(),
+        seen: new Set(), newStickers: [], levelUp: 0, locked: false, timer: null, input: '' };
+  $('#g-title').textContent = MODES[mode].e + ' ' + MODES[mode].t;
+  $('#g-timer').hidden = mode !== 'race';
+  setMsg('');
+  updateChips();
+  show('scr-game');
+  if (mode === 'match') initMatch();
+  else if (mode === 'race') startRace();
+  else nextQ();
+}
+function newProblem(filter) {
+  let p, tries = 0;
+  do { p = makeProblem(pickSkill()); tries++; }
+  while ((R.seen.has(p.text) || (filter && !filter(p))) && tries < 40);
+  R.seen.add(p.text);
+  return p;
+}
+function setProg(f) { $('#g-prog').style.width = Math.max(0, Math.min(100, f * 100)) + '%'; }
+function setMsg(html, cls) { const m = $('#g-msg'); m.className = 'msg' + (cls ? ' ' + cls : ''); m.innerHTML = html; }
+
+function nextQ() {
+  setMsg('');
+  if (R.idx >= R.total) return endRound();
+  R.idx++; R.attempts = 0; R.locked = false; R.input = '';
+  setProg((R.idx - 1) / R.total);
+  RENDER[R.mode]();
+}
+function qnum() { return `<div class="qnum">תרגיל ${R.idx} מתוך ${R.total}</div>`; }
+function speakBtn() { return `<button class="speak" data-act="speak" aria-label="הקראה">🔊</button>`; }
+function exprHTML(tokens) { return `<div class="expr">${tokens.join('')}</div>`; }
+const T = v => `<span>${v}</span>`;
+
+function celebrate(el) {
+  sfx('ok'); addStars(1);
+  const m = pick(okMsgs()); setMsg(m + ' ⭐', 'ok'); say(m.replace(/<[^>]+>/g, ''));
+  if (el) starBurst(el);
+}
+function oops(text, speakText) {
+  sfx('bad');
+  const card = $('.qcard'); if (card) { card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); }
+  setMsg(text, 'bad'); if (speakText) say(speakText);
+}
+
+const RENDER = {
+  /* ---- multiple choice ---- */
+  quiz() {
+    const p = R.p = newProblem();
+    R.say = p.say;
+    const opts = shuffle([p.ans, ...distractors(p)]);
+    $('#g-body').innerHTML = `<div class="qcard pop">${speakBtn()}${qnum()}${exprHTML([T(p.a), T(p.op), T(p.b), T('='), '<span class="slot" id="slot">?</span>'])}</div>
+      <div class="opts">${opts.map(o => `<button class="opt" data-opt="${o}">${o}</button>`).join('')}</div>`;
+  },
+  /* ---- type the answer ---- */
+  pad() {
+    const p = R.p = newProblem();
+    R.say = p.say; R.expect = p.ans; R.hidden = null;
+    $('#g-body').innerHTML = `<div class="qcard pop">${speakBtn()}${qnum()}${exprHTML([T(p.a), T(p.op), T(p.b), T('='), '<span class="slot" id="slot">?</span>'])}</div>${numpadHTML()}`;
+  },
+  /* ---- missing number ---- */
+  missing() {
+    const p = R.p = newProblem();
+    const h = R.hidden = Math.random() < .5 ? 'a' : 'b';
+    R.expect = p[h];
+    R.say = `${h === 'a' ? 'כמה' : p.a} ${WORD[p.op]} ${h === 'b' ? 'כמה' : p.b} שווה ${p.ans}`;
+    const box = '<span class="slot" id="slot">?</span>';
+    $('#g-body').innerHTML = `<div class="qcard pop">${speakBtn()}${qnum()}${exprHTML([h === 'a' ? box : T(p.a), T(p.op), h === 'b' ? box : T(p.b), T('='), T(p.ans)])}</div>${numpadHTML()}`;
+  },
+  /* ---- word problems ---- */
+  story() {
+    const p = R.p = newProblem(q => q.a >= 3 && q.b >= 3 && q.ans >= 1);
+    R.expect = p.ans; R.hidden = null;
+    const txt = storyText(p);
+    R.say = txt.replace(/<[^>]+>/g, '');
+    $('#g-body').innerHTML = `<div class="qcard pop">${speakBtn()}${qnum()}<div class="story">${txt}</div>
+      <div class="story-ans">התשובה: <span class="slot" id="slot">?</span></div></div>${numpadHTML()}`;
+  },
+  /* ---- true / false ---- */
+  tf() {
+    const p = R.p = newProblem();
+    const isTrue = Math.random() < .5;
+    R.shown = isTrue ? p.ans : distractors(p, 1)[0];
+    R.isTrue = isTrue;
+    R.say = `${p.say} שווה ${R.shown}?`;
+    $('#g-body').innerHTML = `<div class="qcard pop">${speakBtn()}${qnum()}${exprHTML([T(p.a), T(p.op), T(p.b), T('='), `<span class="slot typed" id="slot">${R.shown}</span>`])}</div>
+      <div class="opts tf"><button class="opt yes" data-tf="1">✓ נכון</button><button class="opt no" data-tf="0">✗ לא נכון</button></div>`;
+  }
+};
+
+function numpadHTML() {
+  const k = [1, 2, 3, 4, 5, 6, 7, 8, 9, 'del', 0, 'ok'];
+  return `<div class="numpad">${k.map(x =>
+    x === 'del' ? '<button class="key del" data-k="del" aria-label="מחיקה">⌫</button>' :
+    x === 'ok' ? '<button class="key ok" data-k="ok" aria-label="בדיקה">✔</button>' :
+    `<button class="key" data-k="${x}">${x}</button>`).join('')}</div>`;
+}
+function updateSlot() {
+  const s = $('#slot'); if (!s) return;
+  s.textContent = R.input || '?';
+  s.classList.toggle('typed', !!R.input);
+  s.classList.remove('ok', 'bad');
+}
+function typeKey(k) {
+  if (!R || R.locked || !['pad', 'missing', 'story'].includes(R.mode)) return;
+  if (k === 'del') { R.input = R.input.slice(0, -1); updateSlot(); sfx('tap'); return; }
+  if (k === 'ok') return checkTyped();
+  if (R.input.length >= 4) return;
+  if (R.input === '0') R.input = '';
+  R.input += k; updateSlot(); sfx('tap');
+}
+function checkTyped() {
+  if (R.locked || !R.input) return;
+  const ok = +R.input === R.expect, slot = $('#slot');
+  R.locked = true;
+  if (ok) {
+    if (R.attempts === 0) { record(R.p.skill, true); R.correct++; }
+    R.answered++;
+    slot.classList.add('ok');
+    celebrate(slot);
+    later(nextQ, 1100);
+    return;
+  }
+  slot.classList.add('bad');
+  R.attempts++;
+  if (R.attempts === 1) {
+    record(R.p.skill, false);
+    oops(pick(badMsgs()), 'נסי שוב');
+    later(() => {
+      const h = hintFor(R.p, R.hidden);
+      if (h) setMsg(h, 'hint');
+      R.input = ''; updateSlot(); R.locked = false;
+    }, 1000);
+  } else {
+    R.answered++;
+    slot.textContent = R.expect; slot.classList.remove('bad'); slot.classList.add('ok');
+    oops(`התשובה הנכונה היא <span class="ltr">${R.expect}</span>. בפעם הבאה תצליחי!`, 'התשובה היא ' + R.expect);
+    later(nextQ, 2600);
+  }
+}
+function answerChoice(btn, val) {
+  if (R.locked) return; R.locked = true;
+  const p = R.p, ok = val === p.ans;
+  document.querySelectorAll('.opt').forEach(b => { b.disabled = true; if (+b.dataset.opt === p.ans) b.classList.add('ok'); });
+  record(p.skill, ok); R.answered++;
+  const slot = $('#slot');
+  if (ok) { R.correct++; slot.textContent = p.ans; slot.classList.add('ok'); celebrate(btn); }
+  else { btn.classList.add('bad'); slot.textContent = p.ans; slot.classList.add('ok'); oops(`${pick(badMsgs()).replace(' נסי שוב', '')}. התשובה: <span class="ltr">${p.ans}</span>`, 'התשובה היא ' + p.ans); }
+  if (R.mode === 'race') { later(raceNext, ok ? 450 : 1300); return; }
+  later(nextQ, ok ? 1000 : 2000);
+}
+function answerTF(btn, saidTrue) {
+  if (R.locked) return; R.locked = true;
+  const p = R.p, ok = saidTrue === R.isTrue;
+  document.querySelectorAll('.opt').forEach(b => b.disabled = true);
+  record(p.skill, ok); R.answered++;
+  const slot = $('#slot');
+  if (ok) { R.correct++; btn.classList.add('ok'); celebrate(btn); }
+  else { btn.classList.add('bad'); oops(`לא הפעם. <span class="ltr">${p.text} = ${p.ans}</span>`, `${p.say} שווה ${p.ans}`); }
+  if (!R.isTrue) { slot.innerHTML = `<s style="opacity:.5">${R.shown}</s>&nbsp;${p.ans}`; }
+  slot.classList.remove('typed'); slot.classList.add('ok');
+  later(nextQ, ok ? 1000 : 2300);
+}
+
+/* ---- word problem templates ---- */
+function storyText(p) {
+  const n = N(), a = p.a, b = p.b;
+  const S = {
+    '+': [`ל${n} יש ${a} מדבקות. סבתא נתנה לה עוד ${b} מדבקות. כמה מדבקות יש ל${n} עכשיו?`,
+          `בספרייה של הכיתה יש ${a} ספרים. הביאו עוד ${b} ספרים חדשים. כמה ספרים יש עכשיו בספרייה?`,
+          `${n} קפצה בחבל ${a} פעמים בבוקר ו-${b} פעמים אחר הצהריים. כמה פעמים קפצה בסך הכול?`,
+          `בגן החיות ראתה ${n} ${a} ציפורים ועוד ${b} קופים. כמה חיות ראתה בסך הכול?`],
+    '−': [`בסל היו ${a} תפוחים. ${n} לקחה ${b} תפוחים להכנת עוגה. כמה תפוחים נשארו בסל?`,
+          `ל${n} היו ${a} חרוזים. היא השתמשה ב-${b} חרוזים לצמיד. כמה חרוזים נשארו לה?`,
+          `בספר יש ${a} עמודים. ${n} כבר קראה ${b} עמודים. כמה עמודים נשארו לה לקרוא?`,
+          `באוטובוס ישבו ${a} נוסעים. בתחנה ירדו ${b} נוסעים. כמה נוסעים נשארו באוטובוס?`],
+    '×': [`ל${n} יש ${a} קופסאות, ובכל קופסה ${b} צבעים. כמה צבעים יש לה בסך הכול?`,
+          `בגינה יש ${a} שורות, ובכל שורה ${b} פרחים. כמה פרחים יש בגינה?`,
+          `${n} קנתה ${a} חבילות של מסטיקים. בכל חבילה ${b} מסטיקים. כמה מסטיקים קנתה?`,
+          `בכיתה יש ${a} שולחנות, וליד כל שולחן ${b} כיסאות. כמה כיסאות יש בכיתה?`],
+    '÷': [`${n} חילקה ${a} סוכריות שווה בשווה בין ${b} חברות. כמה סוכריות קיבלה כל חברה?`,
+          `בטיול יש ${a} ילדים, והם מתחלקים ל-${b} קבוצות שוות. כמה ילדים יש בכל קבוצה?`,
+          `${n} סידרה ${a} בובות על ${b} מדפים, בכל מדף אותו מספר בובות. כמה בובות יש על כל מדף?`,
+          `${a} עוגיות חולקו ל-${b} צלחות שוות. כמה עוגיות יש בכל צלחת?`]
+  };
+  return pick(S[p.op]);
+}
+
+/* ---- race ---- */
+function startRace() {
+  R.total = 0; R.left = 60; R.locked = false;
+  const tEl = $('#g-timer');
+  const paint = () => { tEl.textContent = `⏱️ ${Math.ceil(R.left)} שניות`; tEl.classList.toggle('hurry', R.left <= 10); setProg(R.left / 60); };
+  paint();
+  let lastWhole = 60;
+  R.timer = setInterval(() => {
+    R.left -= 0.1;
+    if (Math.ceil(R.left) < lastWhole) { lastWhole = Math.ceil(R.left); if (lastWhole <= 5 && lastWhole > 0) sfx('tick'); }
+    paint();
+    if (R.left <= 0) { clearInterval(R.timer); R.timer = null; R.locked = true; endRound(); }
+  }, 100);
+  raceNext();
+}
+function raceNext() {
+  if (!R || R.mode !== 'race' || R.left <= 0) return;
+  setMsg('');
+  R.idx++; R.locked = false;
+  const p = R.p = newProblem();
+  R.say = p.say;
+  const opts = shuffle([p.ans, ...distractors(p)]);
+  $('#g-body').innerHTML = `<div class="qcard pop">${speakBtn()}<div class="qnum">פתרת נכון: ${R.correct}</div>${exprHTML([T(p.a), T(p.op), T(p.b), T('='), '<span class="slot" id="slot">?</span>'])}</div>
+    <div class="opts">${opts.map(o => `<button class="opt" data-opt="${o}">${o}</button>`).join('')}</div>`;
+}
+
+/* ---- match ---- */
+function initMatch() {
+  const pairs = window.innerWidth >= 600 ? 8 : 6;
+  R.total = pairs; R.matched = 0; R.sel = []; R.tries = 0;
+  const ps = []; while (ps.length < pairs) ps.push(newProblem());
+  const cards = shuffle(ps.flatMap((p, i) => [{ id: i, t: p.text, kind: 'q' }, { id: i, t: String(p.ans), kind: 'a' }]));
+  // the same answer value can appear twice; matching is by value, so it stays fair
+  R.pairs = ps;
+  setProg(0);
+  $('#g-body').innerHTML = `<div class="qcard" style="padding:14px"><div class="qnum" style="margin:0;font-size:17px">חברי כל תרגיל לתשובה שלו · נשארו <b id="m-left">${pairs}</b> זוגות</div></div>
+    <div class="grid">${cards.map(c => `<button class="mcard${c.kind === 'a' ? ' ans' : ''}" data-id="${c.id}" data-kind="${c.kind}" data-val="${c.kind === 'q' ? ps[c.id].ans : c.t}">${c.t}</button>`).join('')}</div>`;
+}
+function tapCard(el) {
+  if (R.locked || el.classList.contains('done') || el.classList.contains('sel')) return;
+  sfx('tap');
+  el.classList.add('sel'); R.sel.push(el);
+  if (R.sel.length < 2) return;
+  const [x, y] = R.sel; R.tries++;
+  const ok = x.dataset.kind !== y.dataset.kind && x.dataset.val === y.dataset.val;
+  R.locked = true;
+  if (ok) {
+    const q = x.dataset.kind === 'q' ? x : y;
+    record(R.pairs[+q.dataset.id].skill, true);
+    R.matched++; R.answered++; R.correct++;
+    celebrate(y);
+    later(() => {
+      x.classList.add('done'); y.classList.add('done'); R.sel = []; R.locked = false;
+      $('#m-left').textContent = R.total - R.matched; setProg(R.matched / R.total);
+      if (R.matched === R.total) later(endRound, 450);
+    }, 450);
+  } else {
+    sfx('bad');
+    x.classList.add('bad'); y.classList.add('bad');
+    setMsg(pick(badMsgs()), 'bad');
+    later(() => { x.classList.remove('sel', 'bad'); y.classList.remove('sel', 'bad'); R.sel = []; R.locked = false; setMsg(''); }, 800);
+  }
+}
+
+/* ---- end of round ---- */
+function endRound() {
+  if (R.timer) { clearInterval(R.timer); R.timer = null; }
+  const d = P.days[today()] || (P.days[today()] = { n: 0, ok: 0, ms: 0 });
+  d.ms += Date.now() - R.t0;
+  let acc = R.mode === 'match' ? (R.tries ? R.total / R.tries : 1) : (R.answered ? R.correct / R.answered : 0);
+  acc = Math.min(1, acc);
+  let bonus = 0, record_ = false;
+  if (R.mode === 'race') {
+    if (R.correct > (P.best.race || 0)) { P.best.race = R.correct; record_ = R.correct > 0; if (record_) bonus = 5; }
+  } else if (acc === 1 && R.answered) bonus = 3;
+  if (bonus) addStars(bonus);
+  save();
+  const rating = acc >= .9 ? 3 : acc >= .6 ? 2 : acc > 0 ? 1 : 0;
+  const titles = [`מתאמנות ומשתפרות, ${N()}!`, `יפה מאוד, ${N()}!`, `כל הכבוד, ${N()}!`, `מושלם, ${N()}!`];
+  const line = R.mode === 'race'
+    ? `פתרת נכון <b>${R.correct}</b> תרגילים ב-60 שניות` + (record_ ? '<br>🏆 <b>שיא חדש!</b>' : `<br><span class="muted">השיא שלך: ${P.best.race || 0}</span>`)
+    : R.mode === 'match'
+      ? `מצאת <b>${R.total}</b> זוגות ב-<b>${R.tries}</b> ניסיונות`
+      : `ענית נכון בניסיון הראשון על <b>${R.correct}</b> מתוך <b>${R.answered}</b>`;
+  let rewards = '';
+  if (bonus) rewards += `<div class="reward">${R.mode === 'race' ? 'בונוס שיא' : 'בונוס סיבוב מושלם'}: +${bonus} ⭐</div>`;
+  if (R.newStickers.length) rewards += `<div class="reward">מדבקות חדשות לאלבום!<br>${R.newStickers.map((s, i) => `<span class="stk" style="animation-delay:${.3 + i * .2}s">${s}</span>`).join(' ')}</div>`;
+  if (R.levelUp) rewards += `<div class="reward">🎉 עלית לרמה ${R.levelUp}: ${levelName(R.levelUp)}!</div>`;
+  $('#result').innerHTML = `<h2>${titles[rating]}</h2>
+    <div class="big-stars">${[0, 1, 2].map(i => `<span class="${i < rating ? '' : 'off'}" style="animation-delay:${i * .18}s">⭐</span>`).join('')}</div>
+    <div class="sub">${line}</div>
+    <div class="earned">+${R.stars} ⭐ בסיבוב הזה</div>
+    ${rewards}
+    <div class="actions"><button class="main-btn" data-again>עוד סיבוב 🔄</button><button class="main-btn alt" data-home>למסך הבית 🏠</button></div>`;
+  show('scr-result');
+  if (rating >= 2 || record_ || R.newStickers.length) { sfx('win'); confetti(); }
+  say(titles[rating].replace(/<[^>]+>/g, ''));
+}
+
+/* ==================================================
+   Effects
+   ================================================== */
+function starBurst(el) {
+  if (reduced || !el) return;
+  const r = el.getBoundingClientRect();
+  for (let i = 0; i < 6; i++) {
+    const s = document.createElement('span');
+    s.className = 'spark'; s.textContent = pick(['⭐', '✨', '💖']);
+    s.style.left = (r.left + r.width / 2) + 'px'; s.style.top = (r.top + r.height / 2) + 'px';
+    s.style.setProperty('--dx', rnd(-100, 100) + 'px'); s.style.setProperty('--dy', rnd(-120, -30) + 'px');
+    document.body.appendChild(s); setTimeout(() => s.remove(), 950);
+  }
+}
+function confetti() {
+  if (reduced) return;
+  const cv = $('#fx'), ctx = cv.getContext('2d');
+  const dpr = Math.min(2, window.devicePixelRatio || 1), W = innerWidth, H = innerHeight;
+  cv.hidden = false; cv.width = W * dpr; cv.height = H * dpr; ctx.scale(dpr, dpr);
+  const cols = ['#f472b6', '#a78bfa', '#60a5fa', '#34d399', '#fbbf24', '#fb7185'];
+  const ps = Array.from({ length: 160 }, () => ({ x: W / 2 + rnd(-60, 60), y: H * .35, vx: (Math.random() - .5) * 16, vy: -Math.random() * 15 - 4,
+    s: rnd(7, 12), c: pick(cols), r: Math.random() * 6, vr: (Math.random() - .5) * .3 }));
+  const t0 = performance.now();
+  (function f(t) {
+    ctx.clearRect(0, 0, W, H);
+    ps.forEach(p => { p.vy += .35; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c; ctx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); ctx.restore(); });
+    if (t - t0 < 3200) requestAnimationFrame(f); else { ctx.clearRect(0, 0, W, H); cv.hidden = true; }
+  })(t0);
+}
+
+/* ==================================================
+   Album
+   ================================================== */
+function renderAlbum() {
+  $('#a-count').textContent = `${P.stickers}/${STICKERS.length}`;
+  $('#album').innerHTML = STICKERS.map((s, i) => i < P.stickers ? `<div class="stk-slot">${s}</div>` : '<div class="stk-slot locked">🔒</div>').join('');
+  const left = STARS_PER_STICKER - (P.stars % STARS_PER_STICKER);
+  $('#a-next').textContent = P.stickers >= STICKERS.length ? `${P.name || 'תאיר'}, אספת את כל המדבקות! 👑` : `עוד ${left} ⭐ למדבקה הבאה`;
+  show('scr-album');
+}
+
+/* ==================================================
+   Parents
+   ================================================== */
+let gateAns = 0;
+function openParent() {
+  const a = rnd(13, 19), b = rnd(4, 9); gateAns = a * b;
+  $('#gate-q').innerHTML = `<span class="ltr">${a} × ${b} = ?</span>`;
+  $('#gate-in').value = ''; $('#gate-msg').textContent = ''; $('#gate-msg').className = 'msg';
+  $('#gate').hidden = false; $('#parent-body').hidden = true;
+  show('scr-parent');
+}
+function tryGate() {
+  if (+$('#gate-in').value === gateAns) { $('#gate').hidden = true; renderParent(); }
+  else { $('#gate-msg').textContent = 'לא נכון, נסו שוב'; $('#gate-msg').className = 'msg bad'; }
+}
+const skillName = k => {
+  const op = opOf(k), t = k.replace(/\D/g, '');
+  return { add: 'חיבור', sub: 'חיסור', mul: `לוח הכפל של ${t}`, div: `חילוק ב-${t}` }[op];
+};
+const cls = a => a === null ? '' : a >= .8 ? 'hi' : a >= .6 ? 'mid' : 'lo';
+function accOf(keys) {
+  let n = 0, ok = 0; keys.forEach(k => { const s = P.stats[k]; if (s) { n += s.n; ok += s.ok; } });
+  return { n, ok, a: n ? ok / n : null };
+}
+function renderParent() {
+  const all = accOf(Object.keys(P.stats));
+  const ms = Object.values(P.days).reduce((m, d) => m + (d.ms || 0), 0);
+  const ops = ['add', 'sub', 'mul', 'div'];
+  const opRows = ops.map(o => {
+    const r = accOf(skillsOf(o)), pct = r.a === null ? 0 : Math.round(r.a * 100);
+    return `<div class="oprow"><span>${{ add: 'חיבור', sub: 'חיסור', mul: 'כפל', div: 'חילוק' }[o]}</span>
+      <div class="bar ${cls(r.a)}"><i style="width:${pct}%"></i></div><span class="muted">${r.a === null ? 'אין נתונים' : pct + '% (' + r.n + ')'}</span></div>`;
+  }).join('');
+  const heatRow = op => `<tr><th>${OPS[op]}</th>${range(2, 10).map(t => {
+    const k = op + t, s = P.stats[k], r = s && s.r.length ? s.r.reduce((x, y) => x + y, 0) / s.r.length : null;
+    return `<td class="${cls(r)}" title="${skillName(k)}">${r === null ? '–' : Math.round(r * 100) + '%'}</td>`;
+  }).join('')}</tr>`;
+  const weak = Object.keys(P.stats).filter(k => P.stats[k].r.length >= 3)
+    .map(k => ({ k, e: errRate(k) })).filter(x => x.e > .2).sort((a, b) => b.e - a.e).slice(0, 4);
+  const week = range(0, 6).reverse().map(i => { const d = new Date(); d.setDate(d.getDate() - i); const key = dstr(d); return { lbl: ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'][d.getDay()], n: (P.days[key] || {}).n || 0 }; });
+  const maxN = Math.max(1, ...week.map(w => w.n));
+  const s = P.settings;
+  $('#parent-body').innerHTML = `
+    <div class="panel"><h3>סיכום</h3><div class="stats4">
+      <div class="stat"><b>${all.n}</b><span>תרגילים</span></div>
+      <div class="stat"><b>${all.a === null ? '–' : Math.round(all.a * 100) + '%'}</b><span>דיוק</span></div>
+      <div class="stat"><b>${Math.round(ms / 60000)}</b><span>דקות משחק</span></div>
+      <div class="stat"><b>${streakNow()}</b><span>ימים ברצף</span></div>
+      <div class="stat"><b>${P.stars}</b><span>כוכבים</span></div>
+    </div></div>
+    <div class="panel"><h3>דיוק לפי פעולה</h3>${opRows}</div>
+    <div class="panel"><h3>לוח הכפל והחילוק (12 הניסיונות האחרונים בכל לוח)</h3>
+      <div class="heat-wrap"><table class="heat"><tr><th style="width:22px"></th>${range(2, 10).map(t => `<th>${t}</th>`).join('')}</tr>${heatRow('mul')}${heatRow('div')}</table></div>
+      <div class="muted" style="margin-top:8px;font-size:14px">ירוק: 80% ומעלה · צהוב: 60%-79% · אדום: מתחת ל-60%</div></div>
+    <div class="panel"><h3>על מה כדאי לעבוד</h3>${weak.length
+      ? `<ul class="focus">${weak.map(w => `<li>${skillName(w.k)}: ${Math.round((1 - w.e) * 100)}% הצלחה לאחרונה</li>`).join('')}</ul><div class="muted" style="font-size:14px">המשחק כבר מציג את הנושאים האלה לעתים קרובות יותר.</div>`
+      : '<div class="muted">עדיין אין מספיק נתונים, או שהכול הולך מצוין.</div>'}</div>
+    <div class="panel"><h3>שבוע אחרון (תרגילים ביום)</h3><div class="week">${week.map(w => `<div><span>${w.n || ''}</span><i style="height:${Math.round(85 * w.n / maxN)}%"></i>${w.lbl}</div>`).join('')}</div></div>
+    <div class="panel"><h3>הגדרות</h3>
+      <div class="set-row">שם הילדה<input type="text" id="s-name" value="${esc(P.name)}" maxlength="20"></div>
+      <div class="set-row">פעולות בתרגול<div class="checks">
+        ${ops.map(o => `<label><input type="checkbox" data-op="${o}" ${s[o] ? 'checked' : ''}>${{ add: 'חיבור', sub: 'חיסור', mul: 'כפל', div: 'חילוק' }[o]}</label>`).join('')}</div></div>
+      <div class="set-row">טווח חיבור וחיסור<select id="s-range">${[20, 100, 1000].map(v => `<option value="${v}" ${s.range === v ? 'selected' : ''}>עד ${v}</option>`).join('')}</select></div>
+      <div class="set-row">תרגילים בסיבוב<select id="s-per">${[5, 8, 10, 15, 20].map(v => `<option value="${v}" ${s.perRound === v ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+      <div class="set-row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="s-voice" ${s.voice ? 'checked' : ''}>הקראה בקול של הודעות</label>
+        <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="s-sound" ${s.sound ? 'checked' : ''}>צלילים</label></div>
+      <div class="set-row">קול עברי במכשיר<span class="muted">${heVoice ? 'נמצא, ההקראה תהיה בעברית' : voicesKnown ? 'לא נמצא. המשחק לא יקריא עד שיותקן קול עברי' : 'ייבחר אוטומטית'}</span></div>
+      <div class="set-row"><span class="muted" style="font-size:14px">ההתקדמות נשמרת במכשיר הזה בלבד.</span><button class="danger" id="s-reset">איפוס כל ההתקדמות</button></div>
+    </div>`;
+  $('#parent-body').hidden = false;
+}
+document.addEventListener('change', e => {
+  const t = e.target, s = P.settings;
+  if (t.id === 's-name') P.name = t.value.trim() || 'תאיר';
+  else if (t.dataset.op) {
+    s[t.dataset.op] = t.checked;
+    if (!['add', 'sub', 'mul', 'div'].some(o => s[o])) { s[t.dataset.op] = true; t.checked = true; toast('צריך לפחות פעולה אחת'); }
+  }
+  else if (t.id === 's-range') s.range = +t.value;
+  else if (t.id === 's-per') s.perRound = +t.value;
+  else if (t.id === 's-voice') s.voice = t.checked;
+  else if (t.id === 's-sound') s.sound = t.checked;
+  else return;
+  save();
+});
+
+/* ==================================================
+   Events
+   ================================================== */
+document.addEventListener('click', e => {
+  const el = e.target.closest('button'); if (!el) return;
+  if (el.dataset.mode) return startMode(el.dataset.mode);
+  if (el.dataset.k !== undefined) return typeKey(el.dataset.k);
+  if (el.dataset.opt !== undefined) return answerChoice(el, +el.dataset.opt);
+  if (el.dataset.tf !== undefined) return answerTF(el, el.dataset.tf === '1');
+  if (el.classList.contains('mcard')) return tapCard(el);
+  if (el.dataset.act === 'speak') return say(R && R.say, true);
+  if (el.hasAttribute('data-again')) return startMode(R.mode);
+  if (el.hasAttribute('data-home')) return goHome();
+  switch (el.id) {
+    case 'g-back': return goHome();
+    case 'go-album': return renderAlbum();
+    case 'go-parent': return openParent();
+    case 'gate-go': return tryGate();
+    case 'tog-sound': P.settings.sound = !P.settings.sound; save(); el.textContent = P.settings.sound ? '🔊' : '🔇'; return;
+    case 's-reset':
+      if (confirm('למחוק את כל הכוכבים, המדבקות והסטטיסטיקה? אי אפשר לבטל.')) {
+        const keep = { name: P.name, settings: P.settings }; P = Object.assign(DEF(), keep); save(); renderParent(); toast('ההתקדמות אופסה');
+      }
+  }
+});
+function goHome() {
+  if (R && R.timer) clearInterval(R.timer);
+  R = null;
+  try { speechSynthesis.cancel(); } catch (e) {}
+  renderHome();
+}
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') { if (e.key === 'Enter' && e.target.id === 'gate-in') tryGate(); return; }
+  if (!R || $('#scr-game').hidden) return;
+  if (/^[0-9]$/.test(e.key)) typeKey(e.key);
+  else if (e.key === 'Backspace') typeKey('del');
+  else if (e.key === 'Enter') typeKey('ok');
+});
+document.addEventListener('visibilitychange', () => { if (document.hidden) { try { speechSynthesis.cancel(); } catch (e) {} } });
+
+/* ==================================================
+   Boot + offline install
+   ================================================== */
+renderHome();
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+</script>
+</body>
+</html>
