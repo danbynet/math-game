@@ -7,7 +7,7 @@
 <meta name="color-scheme" content="light">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>המשחק של תאיר</title>
+<title>משחק חשבון</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -178,6 +178,7 @@
   .danger { background: var(--bad-bg); color: #9f1239; border: 2px solid #fecdd3; border-radius: 12px; padding: 10px 16px; font-weight: 800; font-size: 16px; }
   .gate { text-align: center; }
   .gate .expr { font-size: 44px; margin: 10px 0 14px; }
+  .name-in { font: inherit; font-size: 26px; font-weight: 800; text-align: center; width: min(100%, 300px); padding: 10px 14px; border-radius: 16px; border: 3px solid var(--line); color: var(--ink); background: #fff; user-select: text; -webkit-user-select: text; }
   .gate input { width: 140px; text-align: center; font-size: 28px; direction: ltr; }
 
   /* ---------- fx ---------- */
@@ -199,10 +200,26 @@
 <body>
 <div class="app">
 
+  <!-- ========== SETUP (first run) ========== -->
+  <section class="screen" id="scr-setup" hidden>
+    <div class="result">
+      <div class="mascot" style="font-size:80px">🦄🦖</div>
+      <h2>ברוכים הבאים למשחק החשבון!</h2>
+      <div class="sub" style="margin:10px 0">מה השם שלך?</div>
+      <input id="setup-name" class="name-in" type="text" maxlength="20" autocomplete="off" aria-label="השם שלך">
+      <div class="sub" style="margin:18px 0 6px">מי משחק?</div>
+      <div class="actions">
+        <button class="main-btn" data-gender="f">👧 אני בת</button>
+        <button class="main-btn alt" data-gender="m">👦 אני בן</button>
+      </div>
+      <div class="msg" id="setup-msg"></div>
+    </div>
+  </section>
+
   <!-- ========== HOME ========== -->
   <section class="screen" id="scr-home">
     <div class="topbar">
-      <div class="brand" id="brand">👑 המשחק של תאיר</div>
+      <div class="brand" id="brand">👑 משחק חשבון</div>
       <div class="chips">
         <span class="chip" id="c-stars">⭐ 0</span>
         <span class="chip" id="c-streak">🔥 0</span>
@@ -216,7 +233,7 @@
         <div class="bar"><i id="lvl-bar"></i></div>
       </div>
     </div>
-    <div class="section-title">בחרי משחק</div>
+    <div class="section-title" id="pick-title">בחרו משחק</div>
     <div class="tiles" id="tiles"></div>
     <div class="foot">
       <button class="soft-btn" id="go-album">📒 אלבום המדבקות</button>
@@ -283,7 +300,7 @@
    ================================================== */
 const KEY = 'tair-math-v2';
 const DEF = () => ({
-  name: 'תאיר', stars: 0, stickers: 0, streak: { last: '', count: 0 },
+  name: '', gender: '', stars: 0, stickers: 0, streak: { last: '', count: 0 },
   stats: {}, days: {}, best: {},
   settings: { add: true, sub: true, mul: true, div: true, range: 100, perRound: 10, voice: true, sound: true }
 });
@@ -321,7 +338,9 @@ function wpick(items, weights) {
   for (let i = 0; i < items.length; i++) { r -= weights[i]; if (r <= 0) return items[i]; }
   return items[items.length - 1];
 }
-const N = () => esc(P.name || 'תאיר');
+const N = () => esc(P.name || g('אלופה', 'אלוף'));
+// gender: g('feminine text', 'masculine text')
+const g = (f, m) => P.gender === 'm' ? m : f;
 
 /* ==================================================
    Sound (generated, no files) + voice
@@ -419,10 +438,11 @@ function say(t, force) {
    ================================================== */
 const STICKERS = ['🐶','🐱','🐰','🦊','🐼','🐨','🦁','🐯','🐸','🐵','🦄','🐙','🦋','🐢','🐬','🦉','🐧','🦒','🐘','🦔','🐹','🐻','🐮','🐷','🐳','🦩','🐝','🐞','🦜','🐲'];
 const STARS_PER_STICKER = 10;
-const LEVELS = ['מתחילה', 'סקרנית', 'חוקרת', 'מתאמנת', 'מומחית', 'אלופה', 'גאונה', 'כוכבת', 'מלכת החשבון'];
+const LEVELS_F = ['מתחילה', 'סקרנית', 'חוקרת', 'מתאמנת', 'מומחית', 'אלופה', 'גאונה', 'כוכבת', 'מלכת החשבון'];
+const LEVELS_M = ['מתחיל', 'סקרן', 'חוקר', 'מתאמן', 'מומחה', 'אלוף', 'גאון', 'כוכב', 'מלך החשבון'];
 const levelOf = s => Math.floor(Math.sqrt(s / 15)) + 1;
 const starsFor = L => 15 * (L - 1) * (L - 1);
-const levelName = L => LEVELS[Math.min(L, LEVELS.length) - 1] + (L > LEVELS.length ? ' ' + (L - LEVELS.length + 1) : '');
+const levelName = L => { const LV = g(LEVELS_F, LEVELS_M); return LV[Math.min(L, LV.length) - 1] + (L > LV.length ? ' ' + (L - LV.length + 1) : ''); };
 
 function addStars(k) {
   const before = levelOf(P.stars);
@@ -554,9 +574,9 @@ function dotsHTML(rows, cols) {
 /* ==================================================
    Messages
    ================================================== */
-const okMsgs = () => [`כל הכבוד ${N()}!`, `${N()}, את אלופה!`, 'תשובה מושלמת!', 'וואו, איזה יופי!', 'מצוין!', 'גאונה!', 'בדיוק!', 'יש!'];
-const badMsgs = () => ['כמעט! נסי שוב', 'לא נורא, בואי ננסה שוב', `אל תוותרי ${N()}!`, 'אופס, עוד ניסיון'];
-const greet = () => [`היי ${N()}! מה משחקים היום?`, `${N()}, מוכנה לאתגר?`, 'כל תרגיל מקרב אותך למדבקה חדשה!', `${N()}, בואי נשבור שיא!`];
+const okMsgs = () => [`כל הכבוד ${N()}!`, g(`${N()}, את אלופה!`, `${N()}, אתה אלוף!`), 'תשובה מושלמת!', 'וואו, איזה יופי!', 'מצוין!', g('גאונה!', 'גאון!'), 'בדיוק!', 'יש!'];
+const badMsgs = () => [g('כמעט! נסי שוב', 'כמעט! נסה שוב'), g('לא נורא, בואי ננסה שוב', 'לא נורא, בוא ננסה שוב'), g(`אל תוותרי ${N()}!`, `אל תוותר ${N()}!`), 'אופס, עוד ניסיון'];
+const greet = () => [`היי ${N()}! מה משחקים היום?`, g(`${N()}, מוכנה לאתגר?`, `${N()}, מוכן לאתגר?`), 'כל תרגיל מקרב אותך למדבקה חדשה!', g(`${N()}, בואי נשבור שיא!`, `${N()}, בוא נשבור שיא!`)];
 
 /* ==================================================
    Screens
@@ -566,16 +586,19 @@ function show(id) {
   window.scrollTo(0, 0);
 }
 const MODES = {
-  quiz:    { t: 'מבחן אמריקאי', e: '🎯', d: 'בחרי את התשובה הנכונה' },
-  pad:     { t: 'מחשבון אלופות', e: '🔢', d: 'הקלידי את התשובה' },
-  match:   { t: 'התאמת זוגות',   e: '🃏', d: 'חברי תרגיל לתשובה' },
+  quiz:    { t: 'מבחן אמריקאי', e: '🎯', d: () => g('בחרי את התשובה הנכונה', 'בחר את התשובה הנכונה') },
+  pad:     { t: () => g('מחשבון אלופות', 'מחשבון אלופים'), e: '🔢', d: () => g('הקלידי את התשובה', 'הקלד את התשובה') },
+  match:   { t: 'התאמת זוגות',   e: '🃏', d: () => g('חברי תרגיל לתשובה', 'חבר תרגיל לתשובה') },
   missing: { t: 'המספר החסר',    e: '🧩', d: 'איזה מספר מתחבא?' },
-  tf:      { t: 'נכון או לא?',   e: '⚡', d: 'החליטי מהר' },
+  tf:      { t: 'נכון או לא?',   e: '⚡', d: () => g('החליטי מהר', 'החלט מהר') },
   story:   { t: 'סיפורי חשבון',  e: '📖', d: 'שאלות מילוליות' },
-  race:    { t: 'מרוץ נגד השעון', e: '⏱️', d: '60 שניות, כמה תספיקי?' }
+  race:    { t: 'מרוץ נגד השעון', e: '⏱️', d: () => g('60 שניות, כמה תספיקי?', '60 שניות, כמה תספיק?') }
 };
+const V = x => typeof x === 'function' ? x() : x;
 function renderHome() {
-  $('#brand').textContent = '👑 המשחק של ' + (P.name || 'תאיר');
+  $('#brand').textContent = P.name ? '👑 המשחק של ' + P.name : '👑 משחק חשבון';
+  $('#pick-title').textContent = g('בחרי משחק', 'בחר משחק');
+  $('#mascot').textContent = g('🦄', '🦖');
   $('#bubble').innerHTML = pick(greet());
   const L = levelOf(P.stars), lo = starsFor(L), hi = starsFor(L + 1);
   $('#lvl-name').textContent = `רמה ${L} · ${levelName(L)}`;
@@ -583,7 +606,7 @@ function renderHome() {
   $('#lvl-bar').style.width = Math.round(100 * (P.stars - lo) / (hi - lo)) + '%';
   $('#tiles').innerHTML = Object.entries(MODES).map(([k, m]) => {
     const best = k === 'race' && P.best.race ? `<small class="best">🏆 שיא: ${P.best.race}</small>` : '';
-    return `<button class="tile${k === 'race' ? ' featured' : ''}" data-mode="${k}"><span class="te">${m.e}</span><span><b>${m.t}</b><small>${m.d}</small>${best}</span></button>`;
+    return `<button class="tile${k === 'race' ? ' featured' : ''}" data-mode="${k}"><span class="te">${m.e}</span><span><b>${V(m.t)}</b><small>${V(m.d)}</small>${best}</span></button>`;
   }).join('');
   $('#tog-sound').textContent = P.settings.sound ? '🔊' : '🔇';
   updateChips();
@@ -601,7 +624,7 @@ function startMode(mode) {
   if (R && R.timer) clearInterval(R.timer);
   R = { mode, idx: 0, total: P.settings.perRound, correct: 0, answered: 0, stars: 0, t0: Date.now(),
         seen: new Set(), newStickers: [], levelUp: 0, locked: false, timer: null, input: '' };
-  $('#g-title').textContent = MODES[mode].e + ' ' + MODES[mode].t;
+  $('#g-title').textContent = MODES[mode].e + ' ' + V(MODES[mode].t);
   $('#g-timer').hidden = mode !== 'race';
   setMsg('');
   updateChips();
@@ -725,7 +748,7 @@ function checkTyped() {
   R.attempts++;
   if (R.attempts === 1) {
     record(R.p.skill, false);
-    oops(pick(badMsgs()), 'נסי שוב');
+    oops(pick(badMsgs()), g('נסי שוב', 'נסה שוב'));
     later(() => {
       const h = hintFor(R.p, R.hidden);
       if (h) setMsg(h, 'hint');
@@ -734,7 +757,7 @@ function checkTyped() {
   } else {
     R.answered++;
     slot.textContent = R.expect; slot.classList.remove('bad'); slot.classList.add('ok');
-    oops(`התשובה הנכונה היא <span class="ltr">${R.expect}</span>. בפעם הבאה תצליחי!`, 'התשובה היא ' + R.expect);
+    oops(`התשובה הנכונה היא <span class="ltr">${R.expect}</span>. ${g('בפעם הבאה תצליחי!', 'בפעם הבאה תצליח!')}`, 'התשובה היא ' + R.expect);
     later(nextQ, 2600);
   }
 }
@@ -745,7 +768,7 @@ function answerChoice(btn, val) {
   record(p.skill, ok); R.answered++;
   const slot = $('#slot');
   if (ok) { R.correct++; slot.textContent = p.ans; slot.classList.add('ok'); celebrate(btn); }
-  else { btn.classList.add('bad'); slot.textContent = p.ans; slot.classList.add('ok'); oops(`${pick(badMsgs()).replace(' נסי שוב', '')}. התשובה: <span class="ltr">${p.ans}</span>`, 'התשובה היא ' + p.ans); }
+  else { btn.classList.add('bad'); slot.textContent = p.ans; slot.classList.add('ok'); oops(`${pick(badMsgs()).replace(/ נס[יה] שוב/, '')}. התשובה: <span class="ltr">${p.ans}</span>`, 'התשובה היא ' + p.ans); }
   if (R.mode === 'race') { later(raceNext, ok ? 450 : 1300); return; }
   later(nextQ, ok ? 1000 : 2000);
 }
@@ -766,21 +789,24 @@ function answerTF(btn, saidTrue) {
 function storyText(p) {
   const n = N(), a = p.a, b = p.b;
   const S = {
-    '+': [`ל${n} יש ${a} מדבקות. סבתא נתנה לה עוד ${b} מדבקות. כמה מדבקות יש ל${n} עכשיו?`,
+    '+': [`ל${n} יש ${a} מדבקות. סבתא ${g('נתנה לה', 'נתנה לו')} עוד ${b} מדבקות. כמה מדבקות יש ל${n} עכשיו?`,
           `בספרייה של הכיתה יש ${a} ספרים. הביאו עוד ${b} ספרים חדשים. כמה ספרים יש עכשיו בספרייה?`,
-          `${n} קפצה בחבל ${a} פעמים בבוקר ו-${b} פעמים אחר הצהריים. כמה פעמים קפצה בסך הכול?`,
-          `בגן החיות ראתה ${n} ${a} ציפורים ועוד ${b} קופים. כמה חיות ראתה בסך הכול?`],
-    '−': [`בסל היו ${a} תפוחים. ${n} לקחה ${b} תפוחים להכנת עוגה. כמה תפוחים נשארו בסל?`,
-          `ל${n} היו ${a} חרוזים. היא השתמשה ב-${b} חרוזים לצמיד. כמה חרוזים נשארו לה?`,
-          `בספר יש ${a} עמודים. ${n} כבר קראה ${b} עמודים. כמה עמודים נשארו לה לקרוא?`,
+          `${n} ${g('קפצה', 'קפץ')} בחבל ${a} פעמים בבוקר ו-${b} פעמים אחר הצהריים. כמה פעמים ${g('קפצה', 'קפץ')} בסך הכול?`,
+          `בגן החיות ${g('ראתה', 'ראה')} ${n} ${a} ציפורים ועוד ${b} קופים. כמה חיות ${g('ראתה', 'ראה')} בסך הכול?`],
+    '−': [`בסל היו ${a} תפוחים. ${n} ${g('לקחה', 'לקח')} ${b} תפוחים להכנת עוגה. כמה תפוחים נשארו בסל?`,
+          g(`ל${n} היו ${a} חרוזים. היא השתמשה ב-${b} חרוזים לצמיד. כמה חרוזים נשארו לה?`,
+            `ל${n} היו ${a} גולות. הוא נתן ${b} גולות לחבר. כמה גולות נשארו לו?`),
+          `בספר יש ${a} עמודים. ${n} כבר ${g('קראה', 'קרא')} ${b} עמודים. כמה עמודים נשארו ${g('לה', 'לו')} לקרוא?`,
           `באוטובוס ישבו ${a} נוסעים. בתחנה ירדו ${b} נוסעים. כמה נוסעים נשארו באוטובוס?`],
-    '×': [`ל${n} יש ${a} קופסאות, ובכל קופסה ${b} צבעים. כמה צבעים יש לה בסך הכול?`,
+    '×': [`ל${n} יש ${a} קופסאות, ובכל קופסה ${b} צבעים. כמה צבעים יש ${g('לה', 'לו')} בסך הכול?`,
           `בגינה יש ${a} שורות, ובכל שורה ${b} פרחים. כמה פרחים יש בגינה?`,
-          `${n} קנתה ${a} חבילות של מסטיקים. בכל חבילה ${b} מסטיקים. כמה מסטיקים קנתה?`,
+          `${n} ${g('קנתה', 'קנה')} ${a} חבילות של מסטיקים. בכל חבילה ${b} מסטיקים. כמה מסטיקים ${g('קנתה', 'קנה')}?`,
           `בכיתה יש ${a} שולחנות, וליד כל שולחן ${b} כיסאות. כמה כיסאות יש בכיתה?`],
-    '÷': [`${n} חילקה ${a} סוכריות שווה בשווה בין ${b} חברות. כמה סוכריות קיבלה כל חברה?`,
+    '÷': [g(`${n} חילקה ${a} סוכריות שווה בשווה בין ${b} חברות. כמה סוכריות קיבלה כל חברה?`,
+            `${n} חילק ${a} סוכריות שווה בשווה בין ${b} חברים. כמה סוכריות קיבל כל חבר?`),
           `בטיול יש ${a} ילדים, והם מתחלקים ל-${b} קבוצות שוות. כמה ילדים יש בכל קבוצה?`,
-          `${n} סידרה ${a} בובות על ${b} מדפים, בכל מדף אותו מספר בובות. כמה בובות יש על כל מדף?`,
+          g(`${n} סידרה ${a} בובות על ${b} מדפים, בכל מדף אותו מספר בובות. כמה בובות יש על כל מדף?`,
+            `${n} סידר ${a} מכוניות צעצוע על ${b} מדפים, בכל מדף אותו מספר מכוניות. כמה מכוניות יש על כל מדף?`),
           `${a} עוגיות חולקו ל-${b} צלחות שוות. כמה עוגיות יש בכל צלחת?`]
   };
   return pick(S[p.op]);
@@ -821,7 +847,7 @@ function initMatch() {
   // the same answer value can appear twice; matching is by value, so it stays fair
   R.pairs = ps;
   setProg(0);
-  $('#g-body').innerHTML = `<div class="qcard" style="padding:14px"><div class="qnum" style="margin:0;font-size:17px">חברי כל תרגיל לתשובה שלו · נשארו <b id="m-left">${pairs}</b> זוגות</div></div>
+  $('#g-body').innerHTML = `<div class="qcard" style="padding:14px"><div class="qnum" style="margin:0;font-size:17px">${g('חברי', 'חבר')} כל תרגיל לתשובה שלו · נשארו <b id="m-left">${pairs}</b> זוגות</div></div>
     <div class="grid">${cards.map(c => `<button class="mcard${c.kind === 'a' ? ' ans' : ''}" data-id="${c.id}" data-kind="${c.kind}" data-val="${c.kind === 'q' ? ps[c.id].ans : c.t}">${c.t}</button>`).join('')}</div>`;
 }
 function tapCard(el) {
@@ -864,7 +890,7 @@ function endRound() {
   if (bonus) addStars(bonus);
   save();
   const rating = acc >= .9 ? 3 : acc >= .6 ? 2 : acc > 0 ? 1 : 0;
-  const titles = [`מתאמנות ומשתפרות, ${N()}!`, `יפה מאוד, ${N()}!`, `כל הכבוד, ${N()}!`, `מושלם, ${N()}!`];
+  const titles = [g(`מתאמנות ומשתפרות, ${N()}!`, `מתאמנים ומשתפרים, ${N()}!`), `יפה מאוד, ${N()}!`, `כל הכבוד, ${N()}!`, `מושלם, ${N()}!`];
   const line = R.mode === 'race'
     ? `פתרת נכון <b>${R.correct}</b> תרגילים ב-60 שניות` + (record_ ? '<br>🏆 <b>שיא חדש!</b>' : `<br><span class="muted">השיא שלך: ${P.best.race || 0}</span>`)
     : R.mode === 'match'
@@ -923,7 +949,7 @@ function renderAlbum() {
   $('#a-count').textContent = `${P.stickers}/${STICKERS.length}`;
   $('#album').innerHTML = STICKERS.map((s, i) => i < P.stickers ? `<div class="stk-slot">${s}</div>` : '<div class="stk-slot locked">🔒</div>').join('');
   const left = STARS_PER_STICKER - (P.stars % STARS_PER_STICKER);
-  $('#a-next').textContent = P.stickers >= STICKERS.length ? `${P.name || 'תאיר'}, אספת את כל המדבקות! 👑` : `עוד ${left} ⭐ למדבקה הבאה`;
+  $('#a-next').textContent = P.stickers >= STICKERS.length ? `${P.name || g('אלופה', 'אלוף')}, אספת את כל המדבקות! 👑` : `עוד ${left} ⭐ למדבקה הבאה`;
   show('scr-album');
 }
 
@@ -986,7 +1012,8 @@ function renderParent() {
       : '<div class="muted">עדיין אין מספיק נתונים, או שהכול הולך מצוין.</div>'}</div>
     <div class="panel"><h3>שבוע אחרון (תרגילים ביום)</h3><div class="week">${week.map(w => `<div><span>${w.n || ''}</span><i style="height:${Math.round(85 * w.n / maxN)}%"></i>${w.lbl}</div>`).join('')}</div></div>
     <div class="panel"><h3>הגדרות</h3>
-      <div class="set-row">שם הילדה<input type="text" id="s-name" value="${esc(P.name)}" maxlength="20"></div>
+      <div class="set-row">שם<input type="text" id="s-name" value="${esc(P.name)}" maxlength="20"></div>
+      <div class="set-row">פנייה במשחק<select id="s-gender"><option value="f" ${P.gender !== 'm' ? 'selected' : ''}>בת (לשון נקבה)</option><option value="m" ${P.gender === 'm' ? 'selected' : ''}>בן (לשון זכר)</option></select></div>
       <div class="set-row">פעולות בתרגול<div class="checks">
         ${ops.map(o => `<label><input type="checkbox" data-op="${o}" ${s[o] ? 'checked' : ''}>${{ add: 'חיבור', sub: 'חיסור', mul: 'כפל', div: 'חילוק' }[o]}</label>`).join('')}</div></div>
       <div class="set-row">טווח חיבור וחיסור<select id="s-range">${[20, 100, 1000].map(v => `<option value="${v}" ${s.range === v ? 'selected' : ''}>עד ${v}</option>`).join('')}</select></div>
@@ -1000,7 +1027,8 @@ function renderParent() {
 }
 document.addEventListener('change', e => {
   const t = e.target, s = P.settings;
-  if (t.id === 's-name') P.name = t.value.trim() || 'תאיר';
+  if (t.id === 's-name') P.name = t.value.trim() || P.name;
+  else if (t.id === 's-gender') { P.gender = t.value; renderParent(); }
   else if (t.dataset.op) {
     s[t.dataset.op] = t.checked;
     if (!['add', 'sub', 'mul', 'div'].some(o => s[o])) { s[t.dataset.op] = true; t.checked = true; toast('צריך לפחות פעולה אחת'); }
@@ -1018,6 +1046,12 @@ document.addEventListener('change', e => {
    ================================================== */
 document.addEventListener('click', e => {
   const el = e.target.closest('button'); if (!el) return;
+  if (el.dataset.gender) {
+    const nm = $('#setup-name').value.trim();
+    if (!nm) { $('#setup-msg').className = 'msg bad'; $('#setup-msg').textContent = 'כתבו קודם את השם'; $('#setup-name').focus(); return; }
+    P.name = nm; P.gender = el.dataset.gender; save(); ac(); sfx('win');
+    return renderHome();
+  }
   if (el.dataset.mode) return startMode(el.dataset.mode);
   if (el.dataset.k !== undefined) return typeKey(el.dataset.k);
   if (el.dataset.opt !== undefined) return answerChoice(el, +el.dataset.opt);
@@ -1034,7 +1068,7 @@ document.addEventListener('click', e => {
     case 'tog-sound': P.settings.sound = !P.settings.sound; save(); el.textContent = P.settings.sound ? '🔊' : '🔇'; return;
     case 's-reset':
       if (confirm('למחוק את כל הכוכבים, המדבקות והסטטיסטיקה? אי אפשר לבטל.')) {
-        const keep = { name: P.name, settings: P.settings }; P = Object.assign(DEF(), keep); save(); renderParent(); toast('ההתקדמות אופסה');
+        const keep = { name: P.name, gender: P.gender, settings: P.settings }; P = Object.assign(DEF(), keep); save(); renderParent(); toast('ההתקדמות אופסה');
       }
   }
 });
@@ -1056,7 +1090,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) { try
 /* ==================================================
    Boot + offline install
    ================================================== */
-renderHome();
+if (P.gender && P.name) renderHome(); else { show('scr-setup'); }
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
